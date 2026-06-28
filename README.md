@@ -1,5 +1,7 @@
-# Databases_Assignment3 Query Analysis
+## Bonus Task 3 — Query Analysis
 
+**Query:**
+```sql
 explain analyze
 select
     oi.order_id,
@@ -10,7 +12,10 @@ select
 from order_items oi
 join products p on oi.product_id = p.product_id
 where oi.order_id = 1;
+```
 
+**Execution Plan:**
+```text
 Hash Join  (cost=27.09..41.32 rows=7 width=274) (actual time=0.074..0.081 rows=2.00 loops=1)
   Hash Cond: (p.product_id = oi.product_id)
   Buffers: shared hit=2
@@ -27,3 +32,7 @@ Planning:
   Buffers: shared hit=9
 Planning Time: 0.448 ms
 Execution Time: 0.134 ms
+```
+
+**Explanation:**
+PostgreSQL executes this query by first performing a Sequential Scan on the `order_items` table, filtering for rows where `order_id = 1` and storing them in memory using a Hash node. Then, it performs another Sequential Scan on the `products` table and uses a Hash Join to match the records based on the `product_id`. The execution plan also shows `Buffers: shared hit`, which indicates that all required data was efficiently read directly from the memory cache rather than from the disk, completing the execution in just 0.134 milliseconds.
