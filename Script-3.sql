@@ -46,5 +46,47 @@ begin
     update products
     set stock_quantity = stock_quantity - p_quantity
     where product_id = p_product_id;
+end; 
+$$ language plpgsql;
+create or replace function trg_update_order_total()
+returns trigger as $$
+begin
+    if tg_op = 'delete' then
+        update orders
+        set total_amount = calculate_order_total(old.order_id)
+        where order_id = old.order_id;
+        return old;
+    else
+        update orders
+        set total_amount = calculate_order_total(new.order_id)
+        where order_id = new.order_id;
+        return new;
+    end if;
 end;
 $$ language plpgsql;
+create trigger update_order_total_trigger
+after insert or update or delete on order_items
+for each row
+execute function trg_update_order_total();
+create or replace function trg_log_new_order()
+returns trigger as $$
+begin
+    insert into order_log (order_id, customer_id, action, log_date)
+    values (new.order_id, new.customer_id, 'order_created', current_timestamp);
+    return new;
+end;
+$$ language plpgsql;
+create trigger log_new_order_trigger
+after insert on orders
+for each row
+execute function trg_log_new_order();
+--task6
+call create_order(1);
+select * from orders where customer_id = 1 order by order_id desc limit 1;
+select * from order_log;
+call add_product_to_order(4, 4, 2);
+call add_product_to_order(4, 3, 1);
+select * from orders where order_id = 4;
+select product_id, product_name, stock_quantity from products where product_id in (3, 4);
+delete from order_items where order_id = 4 and product_id = 3;
+select * from orders where order_id = 4;
